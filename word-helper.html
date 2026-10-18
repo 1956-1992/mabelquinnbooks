@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Word Helper — Find Words From Your Letters | Mabel Quinn Books</title>
+<meta name="description" content="Free word helper from Mabel Quinn Books. Type your letters and find every word you can make — perfect for Scrabble, Words With Friends, crosswords, and word games. Big, clear, and easy to read.">
+<style>
+  body { margin:0; font-family: Georgia, 'Times New Roman', serif; background:#faf6ee; color:#263238; }
+  header { background:#7a1f2b; color:#fff; text-align:center; padding:44px 20px 34px; }
+  header h1 { margin:0; font-size:40px; letter-spacing:1px; }
+  header p { margin:10px 0 0; font-size:18px; font-style:italic; opacity:.92; }
+  .wrap { max-width:860px; margin:0 auto; padding:28px 20px 10px; }
+  .tool { background:#fff; border:1px solid #e7ddc9; border-radius:12px; padding:26px; box-shadow:0 2px 10px rgba(0,0,0,.05); }
+  .tool p { font-size:17.5px; line-height:1.55; }
+  label { display:block; font-size:16px; font-weight:bold; color:#7a1f2b; margin-bottom:8px; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; }
+  input[type="text"] { flex:1; min-width:220px; font-size:24px; letter-spacing:3px; text-transform:uppercase; padding:13px 16px; border:2px solid #d8cdb4; border-radius:8px; font-family:Arial,sans-serif; background:#fffdf8; color:#263238; }
+  button.go { background:#7a1f2b; color:#fff; border:none; border-radius:8px; padding:14px 30px; font-size:19px; font-family:Arial,sans-serif; font-weight:bold; cursor:pointer; }
+  button.go:disabled { background:#b9a89a; cursor:wait; }
+  .hint { font-size:15.5px; color:#6d675c; margin-top:10px; }
+  #status { font-size:15.5px; color:#6d675c; margin-top:14px; min-height:22px; }
+  .group h3 { font-size:22px; color:#7a1f2b; margin:26px 0 8px; border-bottom:2px solid #e7ddc9; padding-bottom:5px; }
+  .words { font-size:18.5px; line-height:1.9; }
+  .w { display:inline-block; background:#f2ede4; border:1px solid #e0d5ba; border-radius:6px; padding:1px 10px; margin:3px 3px 3px 0; }
+  .pts { font-size:13.5px; color:#8a8378; font-family:Arial,sans-serif; }
+  .club { background:#fdf3e3; border:1px solid #ecd9ae; border-radius:12px; padding:22px 26px; text-align:center; margin-top:28px; }
+  .club h3 { margin:0 0 8px; font-size:24px; color:#7a1f2b; }
+  .club p { font-size:16.5px; line-height:1.55; margin:6px 0; }
+  .club a.button { display:inline-block; margin-top:10px; background:#7a1f2b; color:#fff; text-decoration:none; padding:12px 26px; border-radius:8px; font-size:17px; font-family:Arial,sans-serif; }
+  a.plain { color:#7a1f2b; }
+  footer { text-align:center; color:#8a8378; font-size:14.5px; padding:26px 16px 40px; }
+  @media (max-width:640px){ header h1{font-size:30px;} input[type="text"]{font-size:20px;} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Word Helper</h1>
+  <p>Type your letters — find every word you can make</p>
+</header>
+<div class="wrap">
+
+  <div class="tool">
+    <label for="letters">YOUR LETTERS</label>
+    <div class="row">
+      <input type="text" id="letters" maxlength="12" placeholder="e.g. TRAEINS" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      <button class="go" id="goBtn" onclick="findWords()" disabled>Loading…</button>
+    </div>
+    <p class="hint">Use a question mark <strong>?</strong> for a blank tile. Up to 12 letters. Made for Scrabble, Words With Friends, crosswords, and word games of every kind — big type, no fuss, free forever.</p>
+    <div id="status">Loading the word list (about 279,000 words)…</div>
+    <div id="results"></div>
+  </div>
+
+  <div class="club">
+    <h3>Love word games? Join the Reader Club — It's Free</h3>
+    <p>Get a free sampler of large-print puzzles, first word on new Mabel Quinn books — word search, Sudoku, and gentle activity books made for seniors — and more free tools like this one.</p>
+    <a class="button" href="mailto:hello@mabelquinnbooks.com?subject=Join%20the%20Reader%20Club">Join by Email</a>
+    <p style="margin-top:14px;"><a class="plain" href="index.html">← Back to Mabel Quinn Books</a></p>
+  </div>
+
+</div>
+<footer>
+  © 2026 Mabel Quinn Books · mabelquinnbooks.com<br>
+  Point values shown are standard Scrabble letter values, as a handy guide.
+</footer>
+
+<script>
+  var WORDS = null;
+  var POINTS = {a:1,b:3,c:3,d:2,e:1,f:4,g:2,h:4,i:1,j:8,k:5,l:1,m:3,n:1,o:1,p:3,q:10,r:1,s:1,t:1,u:1,v:4,w:4,x:8,y:4,z:10};
+
+  fetch('words.txt').then(function(r){ return r.text(); }).then(function(t){
+    WORDS = t.split('\n');
+    var b = document.getElementById('goBtn');
+    b.disabled = false; b.textContent = 'Find Words';
+    document.getElementById('status').textContent = 'Word list ready. Type your letters and tap Find Words.';
+    document.getElementById('letters').addEventListener('keydown', function(e){ if (e.key === 'Enter') findWords(); });
+  }).catch(function(){
+    document.getElementById('status').textContent = 'The word list could not load. Please refresh the page and try again.';
+  });
+
+  function score(w, blanksUsed) {
+    var s = 0;
+    for (var i = 0; i < w.length; i++) s += POINTS[w[i]] || 0;
+    return s; // blank tiles score 0 in real play; total shown is the letter-value guide
+  }
+
+  function findWords() {
+    if (!WORDS) return;
+    var raw = document.getElementById('letters').value.toLowerCase().replace(/[^a-z?]/g, '');
+    var status = document.getElementById('status');
+    var results = document.getElementById('results');
+    results.innerHTML = '';
+    if (raw.length < 2) { status.textContent = 'Please type at least 2 letters.'; return; }
+
+    var have = {}, blanks = 0, i, ch;
+    for (i = 0; i < raw.length; i++) {
+      ch = raw[i];
+      if (ch === '?') blanks++; else have[ch] = (have[ch] || 0) + 1;
+    }
+
+    status.textContent = 'Searching…';
+    setTimeout(function(){
+      var found = [];
+      for (var wi = 0; wi < WORDS.length; wi++) {
+        var w = WORDS[wi];
+        if (w.length > raw.length || w.length < 2) continue;
+        var need = {}, ok = true, missing = 0;
+        for (var j = 0; j < w.length; j++) {
+          ch = w[j];
+          need[ch] = (need[ch] || 0) + 1;
+          if (need[ch] > (have[ch] || 0)) missing++;
+          if (missing > blanks) { ok = false; break; }
+        }
+        if (ok) found.push(w);
+      }
+
+      if (!found.length) {
+        status.textContent = 'No words found from those letters. Try adding a ? for a blank tile.';
+        return;
+      }
+      found.sort(function(a, b){ return b.length - a.length || (score(b) - score(a)) || (a < b ? -1 : 1); });
+
+      var cap = 600, shown = found.slice(0, cap), html = '', lastLen = 0;
+      for (var k = 0; k < shown.length; k++) {
+        var word = shown[k];
+        if (word.length !== lastLen) {
+          if (lastLen) html += '</div>';
+          lastLen = word.length;
+          html += '<div class="group"><h3>' + lastLen + '-letter words</h3><div class="words">';
+        }
+        html += '<span class="w">' + word.toUpperCase() + ' <span class="pts">' + score(word) + '</span></span>';
+      }
+      if (lastLen) html += '</div>';
+      results.innerHTML = html;
+      status.textContent = found.length + ' word' + (found.length === 1 ? '' : 's') + ' found from “' + raw.toUpperCase() + '.”' +
+        (found.length > cap ? ' Showing the best ' + cap + ' — longest and highest-scoring first.' : ' Longest first.');
+    }, 30);
+  }
+</script>
+</body>
+</html>
